@@ -10,4 +10,5 @@ export default defineConfig({
       '@/': `${path.resolve(__dirname, 'src')}/`, // 设置别名
     },
   },
+  base: './',
 })
