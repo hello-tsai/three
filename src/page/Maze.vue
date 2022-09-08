@@ -1,8 +1,6 @@
 <script setup>
 import * as THREE from 'three';
 import createAxesHelper from "../unit/createAxesHelper.js";
-// import createControls from "../unit/createControls.js";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import {onMounted, ref} from "vue";
 import  { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'
 
@@ -15,21 +13,6 @@ let taskLen = ref(0)
 
 let camera, scene, renderer, controls;
 
-const objects = [];
-
-let raycaster;
-
-let moveForward = false;
-let moveBackward = false;
-let moveLeft = false;
-let moveRight = false;
-let canJump = false;
-
-let prevTime = performance.now();
-const velocity = new THREE.Vector3();
-const direction = new THREE.Vector3();
-const vertex = new THREE.Vector3();
-const color = new THREE.Color();
 
 
 onMounted(() => {
@@ -51,7 +34,7 @@ function init() {
 
   const blocker = document.getElementById( 'blocker' );
   const firstPerson = document.getElementById( 'firstPerson' );
-  const thirdPerson = document.getElementById( 'thirdPerson' );
+
   console.log(firstPerson, 'firstPerson');
   firstPerson.addEventListener( 'click', function () {
     controls.lock();
@@ -74,71 +57,6 @@ function init() {
 
   scene.add( controls.getObject() );
 
-  const onKeyDown = function ( event ) {
-
-    switch ( event.code ) {
-
-      case 'ArrowUp':
-      case 'KeyW':
-        moveForward = true;
-        break;
-
-      case 'ArrowLeft':
-      case 'KeyA':
-        moveLeft = true;
-        break;
-
-      case 'ArrowDown':
-      case 'KeyS':
-        moveBackward = true;
-        break;
-
-      case 'ArrowRight':
-      case 'KeyD':
-        moveRight = true;
-        break;
-
-      case 'Space':
-        if ( canJump === true ) velocity.y += 350;
-        canJump = false;
-        break;
-
-    }
-
-  };
-
-  const onKeyUp = function ( event ) {
-
-    switch ( event.code ) {
-
-      case 'ArrowUp':
-      case 'KeyW':
-        moveForward = false;
-        break;
-
-      case 'ArrowLeft':
-      case 'KeyA':
-        moveLeft = false;
-        break;
-
-      case 'ArrowDown':
-      case 'KeyS':
-        moveBackward = false;
-        break;
-
-      case 'ArrowRight':
-      case 'KeyD':
-        moveRight = false;
-        break;
-
-    }
-
-  };
-
-  document.addEventListener( 'keydown', onKeyDown );
-  document.addEventListener( 'keyup', onKeyUp );
-
-  raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
 
   // 创建棋盘动箱子
   let moveBoxGroup =  new THREE.Group()
@@ -276,12 +194,6 @@ function init() {
         }
       }
     }
-    // const taskCount = findPath()
-    // if (taskCount[taskCount.length - 1] !== 99){
-    //   createGrid()
-    // }else {
-    //   return taskCount.length - 1
-    // }
     findPath()
   }
 
@@ -290,88 +202,58 @@ function init() {
   let angle
   let vector = new THREE.Vector3(50,0,50)
   let direction
-  // const direction = ['up', 'down', 'left', 'right']
-  window.addEventListener('keydown', e => {
-    console.log('按下去啦');
-    camera.getWorldDirection( vector );
-    angle = THREE.MathUtils.radToDeg( Math.atan2(vector.x,vector.z) );
+  function getDirectionByAngelAndKey(angle, key) {
     if (angle > 45 && angle <= 135 ) {
       direction = 'right'
-    } else if (angle > 135 ) {
-      direction = 'up';
-    } else if (angle < -135 ) {
+    } else if (angle > 135  || angle < -135 ) {
       direction = 'up';
     } else if (angle >= -135 && angle < -45) {
       direction = 'left'
     } else {
       direction = 'down'
     }
-    console.log(angle);
-    console.log(direction);
-    if (e.key === 's' && direction === 'up') {
+    if (key === 's' && direction === 'up') {
       direction = 'down'
     }
-    if (e.key === 's' && direction === 'down') {
+    if (key === 's' && direction === 'down') {
       direction = 'up'
     }
-    if (e.key === 's' && direction === 'left') {
+    if (key === 's' && direction === 'left') {
       direction = 'right'
     }
-    if (e.key === 's' && direction === 'right') {
+    if (key === 's' && direction === 'right') {
       direction = 'left'
     }
-    if (direction === 'up') {
-    // if (e.key === 'w') {
-      if (Math.trunc(curIndex / size) !== 0 && grid[curIndex - size] !== 1) {
-        // const quaternion = new THREE.Quaternion();
-        // quaternion.setFromAxisAngle( new THREE.Vector3( 1, 0, 0 ), Math.PI * -0.5 );
-        // moveBoxGroup.applyQuaternion( quaternion );
+  }
+  window.addEventListener('keydown', e => {
+    console.log('按下去啦');
+    camera.getWorldDirection( vector );
+    angle = THREE.MathUtils.radToDeg( Math.atan2(vector.x,vector.z) );
+    getDirectionByAngelAndKey(angle, e.key)
+    console.log(direction,' direction');
+    if (direction === 'up' && Math.trunc(curIndex / size) !== 0 && grid[curIndex - size] !== 1) {
         moveBoxGroup.position.z = moveBoxGroup.position.z - singleLen
         camera.position.z = camera.position.z - singleLen
-        console.log(moveBoxGroup.position, 'moveBoxGroup.position');
-        console.log(camera.position, 'camera.position');
         curIndex -= size
         count.value += 1
-      }
     }
-    if (direction === 'down'){
-      if (Math.trunc(curIndex / size) !== size - 1 && grid[curIndex + size] !== 1){
-        // moveBoxGroup.rotation.x = Math.PI * -0.5
-        // // moveBoxGroup.position.z += 10
-        // const quaternion = new THREE.Quaternion();
-        // quaternion.setFromAxisAngle( new THREE.Vector3( 1, 0, 0 ), Math.PI * 0.5 );
-        // moveBoxGroup.applyQuaternion( quaternion );
+    if (direction === 'down' && Math.trunc(curIndex / size) !== size - 1 && grid[curIndex + size] !== 1){
         moveBoxGroup.position.z = moveBoxGroup.position.z + singleLen
         camera.position.z = camera.position.z + singleLen
         curIndex += size
         count.value += 1
-      }
     }
-    if (direction === 'left') {
-      const isSide = ((curIndex) % size) === 0
-      if (!isSide && grid[curIndex - 1] !== 1) {
-        // const quaternion = new THREE.Quaternion();
-        // quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), Math.PI * 0.5 );
-        // moveBoxGroup.applyQuaternion( quaternion );
+    if (direction === 'left' && (curIndex % size) !== 0 && grid[curIndex - 1] !== 1) {
         moveBoxGroup.position.x = moveBoxGroup.position.x - singleLen
         camera.position.x = camera.position.x - singleLen
         curIndex -= 1
         count.value += 1
-      }
     }
-    if (direction === 'right') {
-      const isSide = ((curIndex) % size) === size - 1
-      if (!isSide && grid[curIndex + 1] !== 1 ) {
-        console.log('dd');
-        // const quaternion = new THREE.Quaternion();
-        // quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), Math.PI * -0.5 );
-        // moveBoxGroup.applyQuaternion( quaternion );
-        // moveBoxGroup.rotateOnAxis(new THREE.Vector3( 0, 0, 1 ), Math.PI * -0.5 )
+    if (direction === 'right' && (curIndex % size) !== size - 1 && grid[curIndex + 1] !== 1) {
         moveBoxGroup.position.x += singleLen
         camera.position.x = camera.position.x + singleLen
         curIndex += 1
         count.value += 1
-      }
     }
     if ((curIndex === size * size - 1)) {
       if (taskLen.value === count.value ) {
@@ -402,37 +284,6 @@ function init() {
 
 
 
-// 创建相机轨迹
-
-// function createControls() {
-  // const controls = new OrbitControls( camera, renderer.domElement );
-  // camera.position.set( -(size * singleLen) * 0.5 , 10, -(size * singleLen) * 0.5);
-  // // controls.minDistance = 20.0;
-  // // controls.maxDistance = 50.0;
-  // controls.maxPolarAngle = Math.PI * 1.5;
-  // controls.minPolarAngle = 0;
-  // controls.update();
-//   const controls = new PointerLockControls( camera, document.body );
-//
-// // add event listener to show/hide a UI (e.g. the game's menu)
-//
-//   controls.addEventListener( 'lock', function () {
-//
-//     menu.style.display = 'none';
-//
-//   } );
-//
-//   controls.addEventListener( 'unlock', function () {
-//
-//     menu.style.display = 'block';
-//
-//   } );
-// }
-
-
-
-
-
 // 渲染场景：才能展示出来 棋盘
 
 function animate() {
@@ -448,9 +299,6 @@ function animate() {
   <div class="step-num">请在<span class="step-num-unit">{{taskLen}}</span>步内完成</div>
   <div id="blocker">
     <div id="instructions">
-<!--      <button style="font-size:36px" id="thirdPerson">-->
-<!--        第三人称视角开始-->
-<!--      </button>-->
       <button style="font-size:36px" id="firstPerson">
         开始
       </button>
